@@ -8,13 +8,13 @@ import (
 	"monkey/token"
 )
 
-const PROMT = "$ "
+const PROMT = "M>> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
 	for {
-		fmt.Fprintf(out, PROMT)
+		fmt.Fprint(out, PROMT)
 		scanned := scanner.Scan()
 		if !scanned {
 			return
