@@ -11,7 +11,7 @@ type Lexer struct {
 	ch           byte
 }
 
-func New(input string) *Lexer {
+func Create(input string) *Lexer {
 	l := Lexer{
 		input: input,
 	}

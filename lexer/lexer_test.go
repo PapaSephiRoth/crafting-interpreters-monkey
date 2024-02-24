@@ -104,7 +104,7 @@ func TestNextToken(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	l := New(input)
+	l := Create(input)
 
 	for i, tt := range tests {
 		tok := l.NextToken()
