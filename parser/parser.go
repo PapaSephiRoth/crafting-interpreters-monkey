@@ -64,6 +64,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
 		return nil
 	}
@@ -85,13 +87,28 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO: Add expressions later. for now skip to semicolon
+	// TODO: add expressions
 	for !p.isCurrToken(token.SEMICOLON) {
 		p.nextToken()
 	}
 
 	return stmt
 }
+
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{Token: p.currToken}
+
+	p.nextToken()
+
+	//TODO: add expressions
+	for !p.isCurrToken(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// Utils
 
 // If the next token has an expected type, advance to it.
 // This is also known as an assertion function.
