@@ -25,11 +25,21 @@ func Create(l *lexer.Lexer) *Parser {
 		errors: []string{},
 	}
 
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	// Set both tokens
 	p.nextToken()
 	p.nextToken()
 
 	return p
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{
+		Token: p.currToken,
+		Value: p.currToken.Literal,
+	}
 }
 
 // Errors
@@ -72,7 +82,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -113,13 +123,48 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{
+		Token: p.currToken,
+	}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.isPeekToken(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
 // Pratt-Parsing
+const (
+	_ int = iota
+	LOWEST
+	EQUALS
+	LESSERGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
+)
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
+}
+
+// Pratt-Parsig utils
 type (
 	prefixParseFn func() ast.Expression
 	infixParseFn  func(ast.Expression) ast.Expression
 )
 
-// Adder utils
 func (p *Parser) registerPrefix(token token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[token] = fn
 }
