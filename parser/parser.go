@@ -8,10 +8,15 @@ import (
 )
 
 type Parser struct {
-	l         *lexer.Lexer
-	errors    []string
+	l      *lexer.Lexer
+	errors []string
+
 	currToken token.Token
 	peekToken token.Token
+
+	// Expression Parsers
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
 }
 
 func Create(l *lexer.Lexer) *Parser {
@@ -106,6 +111,21 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	}
 
 	return stmt
+}
+
+// Pratt-Parsing
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
+)
+
+// Adder utils
+func (p *Parser) registerPrefix(token token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[token] = fn
+}
+
+func (p *Parser) registerInfix(token token.TokenType, fn infixParseFn) {
+	p.infixParseFns[token] = fn
 }
 
 // Utils

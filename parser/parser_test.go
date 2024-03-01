@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func setupParser(input string, STATEMENTS_COUNT int, t *testing.T) *ast.Program {
+func setupParser(input string, statementsCount int, t *testing.T) *ast.Program {
 	l := lexer.Create(input)
 	p := Create(l)
 
@@ -17,8 +17,8 @@ func setupParser(input string, STATEMENTS_COUNT int, t *testing.T) *ast.Program 
 		t.Fatal("ParseProgram returned nil")
 	}
 
-	if len(program.Statements) != STATEMENTS_COUNT {
-		t.Fatalf("program.Statements does not contain 3 statements. got=%d",
+	if len(program.Statements) != statementsCount {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d", statementsCount,
 			len(program.Statements))
 	}
 	return program
@@ -95,6 +95,30 @@ func TestReturnStatements(t *testing.T) {
 		}
 	}
 
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+
+	program := setupParser(input, 1, t)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("Statement is not ast.Identifier. got=%T", stmt.Expression)
+	}
+
+	if ident.Value != "foobar" {
+		t.Errorf("ident.Value not %s. got=%s", "foobar", ident.Value)
+	}
+
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar", ident.TokenLiteral())
+	}
 }
 
 func checkParserErrors(t *testing.T, p *Parser) {
