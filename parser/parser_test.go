@@ -29,9 +29,9 @@ func TestLetStatements(t *testing.T) {
 	let x = 5;
 	let y = 10;
 	let foobar = 838383;`
-	const STATEMENTS_COUNT = 3
+	const statementsCount = 3
 
-	program := setupParser(input, STATEMENTS_COUNT, t)
+	program := setupParser(input, statementsCount, t)
 
 	tests := []struct {
 		expectedIdentifier string
@@ -80,9 +80,9 @@ func TestReturnStatements(t *testing.T) {
 	return 5;
 	return 10;
 	return 993322;`
-	const STATEMENTS_COUNT = 3
+	const statementCount = 3
 
-	program := setupParser(input, STATEMENTS_COUNT, t)
+	program := setupParser(input, statementCount, t)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -118,6 +118,30 @@ func TestIdentifierExpression(t *testing.T) {
 
 	if ident.TokenLiteral() != "foobar" {
 		t.Errorf("ident.TokenLiteral not %s. got=%s", "foobar", ident.TokenLiteral())
+	}
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "5;"
+
+	program := setupParser(input, 1, t)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+
+	integer, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("Statement is not ast.Identifier. got=%T", stmt.Expression)
+	}
+
+	if integer.Value != 5 {
+		t.Errorf("integer.Value not %d. got=%d", 5, integer.Value)
+	}
+
+	if integer.TokenLiteral() != "5" {
+		t.Errorf("integer.TokenLiteral not %s. got=%s", "5", integer.TokenLiteral())
 	}
 }
 
