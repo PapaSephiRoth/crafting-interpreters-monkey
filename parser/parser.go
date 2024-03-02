@@ -26,39 +26,17 @@ func Create(l *lexer.Lexer) *Parser {
 		errors: []string{},
 	}
 
+	// register prefixes
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
-
+	p.registerPrefix(token.BANG, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	// Set both tokens
 	p.nextToken()
 	p.nextToken()
 
 	return p
-}
-
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{
-		Token: p.currToken,
-		Value: p.currToken.Literal,
-	}
-}
-
-func (p *Parser) parseIntegerLiteral() ast.Expression {
-	expression := &ast.IntegerLiteral{
-		Token: p.currToken,
-	}
-
-	integer, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
-	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
-		p.errors = append(p.errors, msg)
-		return nil
-	}
-
-	expression.Value = integer
-
-	return expression
 }
 
 // Errors
@@ -69,6 +47,11 @@ func (p *Parser) Errors() []string {
 func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
 		t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) noPrefixFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix function for %s found", t)
 	p.errors = append(p.errors, msg)
 }
 
@@ -94,6 +77,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// Parse statement
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.currToken.Type {
 	case token.LET:
@@ -156,6 +140,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return stmt
 }
 
+// Parse expression
 // Pratt-Parsing
 const (
 	_ int = iota
@@ -171,11 +156,49 @@ const (
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.currToken.Type]
 	if prefix == nil {
+		p.noPrefixFnError(p.currToken.Type)
 		return nil
 	}
 	leftExp := prefix()
 
 	return leftExp
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{
+		Token: p.currToken,
+		Value: p.currToken.Literal,
+	}
+}
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	expression := &ast.IntegerLiteral{
+		Token: p.currToken,
+	}
+
+	integer, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+
+	expression.Value = integer
+
+	return expression
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	exp := &ast.PrefixExpression{
+		Token:    p.currToken,
+		Operator: p.currToken.Literal,
+	}
+
+	p.nextToken()
+
+	exp.Right = p.parseExpression(PREFIX)
+
+	return exp
 }
 
 // Pratt-Parsig utils
@@ -192,7 +215,7 @@ func (p *Parser) registerInfix(token token.TokenType, fn infixParseFn) {
 	p.infixParseFns[token] = fn
 }
 
-// Utils
+// Search Utils
 
 // If the next token has an expected type, advance to it.
 // This is also known as an assertion function.
